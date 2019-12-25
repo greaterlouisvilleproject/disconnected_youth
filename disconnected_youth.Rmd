@@ -1,0 +1,136 @@
+---
+title: "Disconnected Youth in Louisville"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+#initial setup of data
+library(tidyverse)
+library(survey)
+library(plotly)
+
+df <- read_csv("ipums_discon.csv")
+
+df <- df %>%
+  filter(PUMA %in% c(01701, 01702, 01703, 01704, 01705, 01706) & 
+           STATEFIP == 21 &
+           EMPSTAT != 0 &
+           SCHOOL != 0) 
+
+df <- df %>%
+  mutate(emp = if_else(EMPSTAT == 1, 1, 0),
+         school = if_else(SCHOOL == 2, 1, 0),
+         discon = if_else((emp == 0 & school == 0), 1, 0))
+
+svy_df <- svydesign(ids = ~1, weights = ~PERWT, data = df)
+```
+
+plt
+```{r}
+#line graph by age
+df5 <- df %>% 
+  filter(YEAR > 2013)
+
+svy_df5 <- svydesign(ids = ~1, weights = ~PERWT, data = df5)
+
+emp_school5 <- svyby(~emp+school+discon, ~AGE, design = svy_df5, svymean)
+
+df_plt <- emp_school5 %>%
+  mutate(emp = round(emp * 100, 1),
+         school = round(school * 100, 1),
+         discon = round(discon * 100, 1))
+
+plt_line <- plot_ly(df_plt, x = ~AGE) %>%
+  add_trace(y = ~emp, name = 'Employed', type = 'scatter', mode = 'lines') %>%
+  add_trace(y = ~school, name = 'In School', type = 'scatter',  mode = 'lines') %>%
+  add_trace(y = ~discon, name = 'Disconnected', type = 'scatter', mode = 'lines') %>%
+  layout(title = "Disconnected Youth in Jefferson County by Age",
+         yaxis = list(title = "Percent"),
+         xaxi = list(title = "Age"))
+
+plt_line
+```
+
+
+```{r}
+df5_19 <- df %>% 
+  filter(YEAR > 2013 & AGE > 18) #19-24 for the past 5 years
+
+df5_19 <- df5_19 %>%
+  mutate(status = case_when(
+    emp == 1 & school == 1 ~ "Employed and in school",
+    emp == 1 & school == 0 ~ "Employed, not in school",
+    emp == 0 & school == 1 ~ "In school, not employed",
+    emp == 0 & school == 0 ~ "Disconnected"
+  ),
+  count = 1)
+
+svy_df5_19 <- svydesign(ids = ~1, weights = ~PERWT, data = df5_19)
+
+emp_school5_19 <- svyby(~count, ~status, design = svy_df5_19, svytotal) %>%
+  mutate(percent = count / sum(count))
+
+
+
+plt_donut <- plot_ly(data = emp_school5_19, labels = ~status, values =  ~percent) %>%
+  add_pie(hole = 0.6) %>%
+  layout(title = "Disconnected Youth in Louisville aged 19-24, 2014-2018", 
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+plt_donut
+```
+
+```{r}
+#a deeper dive on disconnected youth
+df_discon <- df5_19 %>%
+  filter(status == "Disconnected") #350 observations
+
+
+```
+
+
+
+```{r}
+#Analysis by Year for 19-24
+
+df <- df %>% 
+  filter(AGE > 18)
+
+svy_df <- svydesign(ids = ~1, weights = ~PERWT, data = df)
+
+emp_school <- svyby(~emp+school+discon, ~YEAR, design = svy_df, svymean)
+
+df_plt <- emp_school %>%
+  mutate(emp = round(emp * 100, 1),
+         school = round(school * 100, 1),
+         discon = round(discon * 100, 1))
+
+plt_line <- plot_ly(df_plt, x = ~YEAR) %>%
+  add_trace(y = ~emp, name = 'Employed', mode = 'lines') %>%
+  add_trace(y = ~school, name = 'In School', mode = 'lines') %>%
+  add_trace(y = ~discon, name = 'Disconnected', mode = 'lines') %>%
+  layout(title = "Disconnected Youth in Jefferson County by Year",
+         yaxis = list(title = "Percent"),
+         xaxis = list(title = "Year"))
+
+plt_line
+```
+
+
+```{r}
+
+```
+
+```{r}
+plt_bar <- plot_ly(df_plt, x = ~AGE, y = ~discon, type = 'bar')
+plt_bar
+```
+
+
+
+
+
