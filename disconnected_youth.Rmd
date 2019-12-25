@@ -49,7 +49,7 @@ plt_line <- plot_ly(df_plt, x = ~AGE) %>%
   add_trace(y = ~discon, name = 'Disconnected', type = 'scatter', mode = 'lines') %>%
   layout(title = "Disconnected Youth in Jefferson County by Age",
          yaxis = list(title = "Percent"),
-         xaxi = list(title = "Age"))
+         xaxis = list(title = "Age"))
 
 plt_line
 ```
@@ -77,7 +77,7 @@ emp_school5_19 <- svyby(~count, ~status, design = svy_df5_19, svytotal) %>%
 
 plt_donut <- plot_ly(data = emp_school5_19, labels = ~status, values =  ~percent) %>%
   add_pie(hole = 0.6) %>%
-  layout(title = "Disconnected Youth in Louisville aged 19-24, 2014-2018", 
+  layout(title = "Youth in Louisville aged 19-24, 2014-2018", 
          xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
          yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
 
@@ -89,7 +89,29 @@ plt_donut
 df_discon <- df5_19 %>%
   filter(status == "Disconnected") #350 observations
 
+df_discon <- df_discon %>%
+  mutate(labforce = if_else(LABFORCE == 2, 1, 0),
+  workedly = if_else(WORKEDYR == 3, 1, 0),
+  statusd = case_when(
+    labforce == 1 & workedly == 1 ~ "Worked LY, In Labor Force",
+    labforce == 0 & workedly == 1 ~ "Worked LY, Not in Labor Force",
+    labforce == 1 & workedly == 0 ~ "Didn't work LY, In Labor Force",
+    labforce == 0 & workedly == 0 ~ "Didn't Work LY, Not in Labor Force"
+    ),
+  count = 1)
 
+svy_discon <- svydesign(ids = ~1, weights = ~PERWT, data = df_discon)
+
+df_discon <- svyby(~count, ~statusd, design = svy_discon, svytotal) %>%
+  mutate(percent = count / sum(count))
+
+plt_donut <- plot_ly(data = df_discon, labels = ~statusd, values =  ~percent) %>%
+  add_pie(hole = 0.6) %>%
+  layout(title = "Disconnected Youth in Louisville aged 19-24, 2014-2018", 
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+plt_donut
 ```
 
 
