@@ -1,10 +1,17 @@
 ---
-title: "Disconnected Youth in Louisville"
+title: "Opportunity Youth in Louisville"
 output: 
   html_document:
     toc: true
     toc_float: true
+    code_folding: hide
 ---
+
+# Introduction
+
+Opportunity Youth are people ages 16-24 who are neither working nor in school. A series of [feature articles](https://www.courier-journal.com/story/news/education/2019/12/11/louisville-has-large-number-youth-who-out-school-work/4055310002/) by Mandy McLaren in the Courier-Journal has ignited discussion around opportunity youth, sometimes also called disconnected youth. In addition to the feature articles there is also a [report](https://www.kentuckianaworks.org/news/disconnected-youth) by Kentuckiana Works digging into even more of the data around opportunity youth.
+
+Here, we take a slighlty closer look at opportunity youth in Louisville/Jefferson County (most reporting has focused on the Metro Level, which includes neighboring counties). One reason for this shift is because most of the solutions discussed focus on either city government or JCPS. A separate analysis of surrounding counties would be a useful follow up, but the core county and it's surrounding counties are very different in terms of both underlying problems and solutions. 
 
 ```{r, echo = FALSE, message = FALSE, warning = FALSE}
 #initial setup of data
@@ -12,30 +19,23 @@ library(tidyverse)
 library(survey)
 library(plotly)
 
-df <- read_csv("ipums_discon.csv")
+# read in data and filter to just Louisville where school and employment aren't NA
 
-df <- df %>%
+df <- read_csv("ipums_discon.csv") %>%
   filter(PUMA %in% c(01701, 01702, 01703, 01704, 01705, 01706) & 
            STATEFIP == 21 &
            EMPSTAT != 0 &
-           SCHOOL != 0) 
-
-df <- df %>%
+           SCHOOL != 0)  %>%
+  #recode employment, school, and create disconnected youth. Having dichotomous variables makes it easy to get percentages later
   mutate(emp = if_else(EMPSTAT == 1, 1, 0),
          school = if_else(SCHOOL == 2, 1, 0),
          discon = if_else((emp == 0 & school == 0), 1, 0))
 
-svy_df <- svydesign(ids = ~1, weights = ~PERWT, data = df)
-```
-
-plt
-```{r}
-#line graph by age
+# cut to just 5 years
 df5 <- df %>% 
   filter(YEAR > 2013)
 
 svy_df5 <- svydesign(ids = ~1, weights = ~PERWT, data = df5)
-
 emp_school5 <- svyby(~emp+school+discon, ~AGE, design = svy_df5, svymean)
 
 df_plt <- emp_school5 %>%
@@ -47,13 +47,26 @@ plt_line <- plot_ly(df_plt, x = ~AGE) %>%
   add_trace(y = ~emp, name = 'Employed', type = 'scatter', mode = 'lines') %>%
   add_trace(y = ~school, name = 'In School', type = 'scatter',  mode = 'lines') %>%
   add_trace(y = ~discon, name = 'Disconnected', type = 'scatter', mode = 'lines') %>%
-  layout(title = "Disconnected Youth in Jefferson County by Age",
+  layout(title = "Disconnected Youth in Jefferson County by Age, 2014-2018",
          yaxis = list(title = "Percent"),
          xaxis = list(title = "Age"))
+```
 
+# School or Jobs?
+
+Opportunity Youth are those neither in school or work, and the balance between school and work shifts by age. Enrollment is very high among 16 and 17 year olds (who are legally required to be in school, so this may mask students who are technically enrolled but chronically absent). Ages 18 through 20 show a drastic drop in school enrollment, followed by another drop at 22. Employment follows the opposite pattern, rising steadily with only 20% of 16 year olds employed and going up to 80% of 24 year olds. Unfortunately, school enrollment drops off more quickly than employment rising, leading to disconnection peaking at age 20.
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
 plt_line
 ```
 
+Two things to learn from this graph
+- we can address opportunity youth either by changing how quickly school enrollment falls or by increasing the rate at which employment rises.
+- 16 year olds and 24 year olds are extremely different, even statistically. The services they need are likely to be very different also.
+
+# 19-24 year olds
+
+Because 16-18 year olds tend to be in school and have much lower rates of disconnection, this more detailed look focuses on ages 19-24. The chart above just considered school and employment without considering overlap. Over a quarter of 19-24 year olds in Louisville are actually both in school and working.
 
 ```{r}
 df5_19 <- df %>% 
@@ -83,6 +96,10 @@ plt_donut <- plot_ly(data = emp_school5_19, labels = ~status, values =  ~percent
 
 plt_donut
 ```
+
+# Temporary Unemployment
+
+We can also look among those who are disconnected to see if they are out of the labor force and if they worked any weeks in the past year. This serves as a rough proxy for what we might consider short-term disconnected (in labor force and worked not long ago) and long-term disconnected who may be harder to reach. Just under half of disconnected youth did not work 
 
 ```{r}
 #a deeper dive on disconnected youth
@@ -114,7 +131,9 @@ plt_donut <- plot_ly(data = df_discon, labels = ~statusd, values =  ~percent) %>
 plt_donut
 ```
 
+# Opportunity Youth over time
 
+Looking over time also shows impact of the recession, with employment falling and school enrollment rates rising when the economy is poor. However, for the most part, the percentage of disconnected youth has fallen since the 2012. (The large swings from year to year are due to small sample size)
 
 ```{r}
 #Analysis by Year for 19-24
@@ -143,14 +162,7 @@ plt_line
 ```
 
 
-```{r}
 
-```
-
-```{r}
-plt_bar <- plot_ly(df_plt, x = ~AGE, y = ~discon, type = 'bar')
-plt_bar
-```
 
 
 
