@@ -13,7 +13,7 @@ Opportunity Youth are people ages 16-24 who are neither working nor in school. A
 
 Here, we take a slighlty closer look at opportunity youth in Louisville/Jefferson County (most reporting has focused on the Metro Level, which includes neighboring counties). One reason for this shift is because most of the solutions discussed focus on either city government or JCPS. A separate analysis of surrounding counties would be a useful follow up, but the core county and it's surrounding counties are very different in terms of both underlying problems and solutions. 
 
-```{r, echo = FALSE, message = FALSE, warning = FALSE}
+```{r, message = FALSE, warning = FALSE}
 #initial setup of data
 library(tidyverse)
 library(survey)
@@ -30,15 +30,17 @@ df <- read_csv("ipums_discon.csv") %>%
   mutate(emp = if_else(EMPSTAT == 1, 1, 0),
          school = if_else(SCHOOL == 2, 1, 0),
          discon = if_else((emp == 0 & school == 0), 1, 0))
+```
 
-# cut to just 5 years
-df5 <- df %>% 
-  filter(YEAR > 2013)
+# School or Jobs?
 
-svy_df5 <- svydesign(ids = ~1, weights = ~PERWT, data = df5)
-emp_school5 <- svyby(~emp+school+discon, ~AGE, design = svy_df5, svymean)
+Opportunity Youth are those neither in school or work, and the balance between school and work shifts by age. Enrollment is very high among 16 and 17 year olds (who are legally required to be in school, so this may mask students who are technically enrolled but chronically absent). Ages 18 through 20 show a drastic drop in school enrollment, followed by another drop at 22. Employment follows the opposite pattern, rising steadily with only 20% of 16 year olds employed and going up to 80% of 24 year olds. Unfortunately, school enrollment drops off more quickly than employment rising, leading to disconnection peaking at age 20.
 
-df_plt <- emp_school5 %>%
+```{r, message = FALSE, warning = FALSE}
+svy_df <- svydesign(ids = ~1, weights = ~PERWT, data = df)
+emp_school <- svyby(~emp+school+discon, ~AGE, design = svy_df, svymean)
+
+df_plt <- emp_school %>%
   mutate(emp = round(emp * 100, 1),
          school = round(school * 100, 1),
          discon = round(discon * 100, 1))
@@ -50,13 +52,7 @@ plt_line <- plot_ly(df_plt, x = ~AGE) %>%
   layout(title = "Disconnected Youth in Jefferson County by Age, 2014-2018",
          yaxis = list(title = "Percent"),
          xaxis = list(title = "Age"))
-```
 
-# School or Jobs?
-
-Opportunity Youth are those neither in school or work, and the balance between school and work shifts by age. Enrollment is very high among 16 and 17 year olds (who are legally required to be in school, so this may mask students who are technically enrolled but chronically absent). Ages 18 through 20 show a drastic drop in school enrollment, followed by another drop at 22. Employment follows the opposite pattern, rising steadily with only 20% of 16 year olds employed and going up to 80% of 24 year olds. Unfortunately, school enrollment drops off more quickly than employment rising, leading to disconnection peaking at age 20.
-
-```{r, echo = FALSE, message = FALSE, warning = FALSE}
 plt_line
 ```
 
@@ -68,7 +64,7 @@ Two things to learn from this graph
 
 Because 16-18 year olds tend to be in school and have much lower rates of disconnection, this more detailed look focuses on ages 19-24. The chart above just considered school and employment without considering overlap. Over a quarter of 19-24 year olds in Louisville are actually both in school and working.
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 df5_19 <- df %>% 
   filter(YEAR > 2013 & AGE > 18) #19-24 for the past 5 years
 
@@ -101,7 +97,7 @@ plt_donut
 
 We can also look among those who are disconnected to see if they are out of the labor force and if they worked any weeks in the past year. This serves as a rough proxy for what we might consider short-term disconnected (in labor force and worked not long ago) and long-term disconnected who may be harder to reach. Just under half of disconnected youth did not work 
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #a deeper dive on disconnected youth
 df_discon <- df5_19 %>%
   filter(status == "Disconnected") #350 observations
@@ -135,7 +131,7 @@ plt_donut
 
 Looking over time also shows impact of the recession, with employment falling and school enrollment rates rising when the economy is poor. However, for the most part, the percentage of disconnected youth has fallen since the 2012. (The large swings from year to year are due to small sample size)
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #Analysis by Year for 19-24
 
 df <- df %>% 
@@ -161,9 +157,63 @@ plt_line <- plot_ly(df_plt, x = ~YEAR) %>%
 plt_line
 ```
 
+# High Shool Degrees
 
+Having a high school degree makes a large difference. For those 19-24 who do have a high school degree (or GED) the percent employed rises to around 80 percent. Important context here is that 80% is the percent of people 25-54 who are [working](https://fred.stlouisfed.org/series/LNS12300060). Whether or not 80% of the prime working age labor force being employed is a good number is a more detailed question for economists and sociologists, but for our purposes here we can say they've effectively transitioned into the adult population. 
 
+```{r, message = FALSE, warning = FALSE}
+#Analysis by AGE for 19-24 who get HS degree
 
+df_hs <- df %>% 
+  filter(AGE > 18 & EDUCD != 999 & EDUCD > 62)
+
+svy_df <- svydesign(ids = ~1, weights = ~PERWT, data = df_hs)
+
+emp_school <- svyby(~emp+school+discon, ~AGE, design = svy_df, svymean)
+
+df_plt <- emp_school %>%
+  mutate(emp = round(emp * 100, 1),
+         school = round(school * 100, 1),
+         discon = round(discon * 100, 1))
+
+plt_line <- plot_ly(df_plt, x = ~AGE) %>%
+  add_trace(y = ~emp, name = 'Employed', mode = 'lines') %>%
+  add_trace(y = ~school, name = 'In School', mode = 'lines') %>%
+  add_trace(y = ~discon, name = 'Disconnected', mode = 'lines') %>%
+  layout(title = "Disconnected Youth in Jefferson County by Year",
+         yaxis = list(title = "Percent"),
+         xaxis = list(title = "Year"))
+
+plt_line
+```
+
+By contrast nearly half of those who do not graduate high school wind up disconnected - the numbers bounce around a little since in any given year there aren't that many 22 year olds who don't have a H.S. degree included in the survey, but the contrast between those who do and don't graduate is stark. 
+
+```{r, message = FALSE, warning = FALSE}
+#Analysis by AGE for 19-24 who do not get a HS degree
+
+df_no_hs <- df %>% 
+  filter(AGE > 18 & EDUCD != 999 & EDUCD < 62)
+
+svy_df <- svydesign(ids = ~1, weights = ~PERWT, data = df_no_hs)
+
+emp_school <- svyby(~emp+school+discon, ~AGE, design = svy_df, svymean)
+
+df_plt <- emp_school %>%
+  mutate(emp = round(emp * 100, 1),
+         school = round(school * 100, 1),
+         discon = round(discon * 100, 1))
+
+plt_line <- plot_ly(df_plt, x = ~AGE) %>%
+  add_trace(y = ~emp, name = 'Employed', mode = 'lines') %>%
+  add_trace(y = ~school, name = 'In School', mode = 'lines') %>%
+  add_trace(y = ~discon, name = 'Disconnected', mode = 'lines') %>%
+  layout(title = "Disconnected Youth in Jefferson County by Year",
+         yaxis = list(title = "Percent"),
+         xaxis = list(title = "Year"))
+
+plt_line
+```
 
 
 
