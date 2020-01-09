@@ -46,9 +46,12 @@ df_plt <- emp_school %>%
          discon = round(discon * 100, 1))
 
 plt_line <- plot_ly(df_plt, x = ~AGE) %>%
-  add_trace(y = ~emp, name = 'Employed', type = 'scatter', mode = 'lines') %>%
-  add_trace(y = ~school, name = 'In School', type = 'scatter',  mode = 'lines') %>%
-  add_trace(y = ~discon, name = 'Disconnected', type = 'scatter', mode = 'lines') %>%
+  add_trace(y = ~emp, name = 'Employed', type = 'scatter', mode = 'lines', 
+            line = list(color = 'blue')) %>%
+  add_trace(y = ~school, name = 'In School', type = 'scatter',  mode = 'lines',
+            line = list(color = 'green')) %>%
+  add_trace(y = ~discon, name = 'Disconnected', type = 'scatter', mode = 'lines', 
+            line = list(color = 'red')) %>%
   layout(title = "Disconnected Youth in Jefferson County by Age, 2014-2018",
          yaxis = list(title = "Percent"),
          xaxis = list(title = "Age"))
@@ -57,7 +60,8 @@ plt_line
 ```
 
 Two things to learn from this graph
-- we can address opportunity youth either by changing how quickly school enrollment falls or by increasing the rate at which employment rises.
+
+- We can address opportunity youth either by changing how quickly school enrollment falls or by increasing the rate at which employment rises.
 - 16 year olds and 24 year olds are extremely different, even statistically. The services they need are likely to be very different also.
 
 # 19-24 year olds
@@ -84,7 +88,8 @@ emp_school5_19 <- svyby(~count, ~status, design = svy_df5_19, svytotal) %>%
 
 
 
-plt_donut <- plot_ly(data = emp_school5_19, labels = ~status, values =  ~percent) %>%
+plt_donut <- plot_ly(data = emp_school5_19, labels = ~status, values =  ~percent,
+                     marker = list(colors = c('red', 'cyan', 'blue', 'green'))) %>%
   add_pie(hole = 0.6) %>%
   layout(title = "Youth in Louisville aged 19-24, 2014-2018", 
          xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
@@ -147,9 +152,12 @@ df_plt <- emp_school %>%
          discon = round(discon * 100, 1))
 
 plt_line <- plot_ly(df_plt, x = ~YEAR) %>%
-  add_trace(y = ~emp, name = 'Employed', mode = 'lines') %>%
-  add_trace(y = ~school, name = 'In School', mode = 'lines') %>%
-  add_trace(y = ~discon, name = 'Disconnected', mode = 'lines') %>%
+  add_trace(y = ~emp, name = 'Employed', mode = 'lines',
+            line = list(color = 'blue')) %>%
+  add_trace(y = ~school, name = 'In School', mode = 'lines',
+            line = list(color = 'green')) %>%
+  add_trace(y = ~discon, name = 'Disconnected', mode = 'lines',
+            line = list(color = 'red')) %>%
   layout(title = "Disconnected Youth in Jefferson County by Year",
          yaxis = list(title = "Percent"),
          xaxis = list(title = "Year"))
@@ -177,9 +185,12 @@ df_plt <- emp_school %>%
          discon = round(discon * 100, 1))
 
 plt_line <- plot_ly(df_plt, x = ~AGE) %>%
-  add_trace(y = ~emp, name = 'Employed', mode = 'lines') %>%
-  add_trace(y = ~school, name = 'In School', mode = 'lines') %>%
-  add_trace(y = ~discon, name = 'Disconnected', mode = 'lines') %>%
+  add_trace(y = ~emp, name = 'Employed', mode = 'lines',
+            line = list(color = 'blue')) %>%
+  add_trace(y = ~school, name = 'In School', mode = 'lines',
+            line = list(color = 'green')) %>%
+  add_trace(y = ~discon, name = 'Disconnected', mode = 'lines',
+            line = list(color = 'red')) %>%
   layout(title = "Disconnected Youth in Jefferson County by Year",
          yaxis = list(title = "Percent"),
          xaxis = list(title = "Year"))
@@ -205,9 +216,12 @@ df_plt <- emp_school %>%
          discon = round(discon * 100, 1))
 
 plt_line <- plot_ly(df_plt, x = ~AGE) %>%
-  add_trace(y = ~emp, name = 'Employed', mode = 'lines') %>%
-  add_trace(y = ~school, name = 'In School', mode = 'lines') %>%
-  add_trace(y = ~discon, name = 'Disconnected', mode = 'lines') %>%
+  add_trace(y = ~emp, name = 'Employed', mode = 'lines',
+            line = list(color = 'blue')) %>%
+  add_trace(y = ~school, name = 'In School', mode = 'lines',
+            line = list(color = 'green')) %>%
+  add_trace(y = ~discon, name = 'Disconnected', mode = 'lines',
+            line = list(color = 'red')) %>%
   layout(title = "Disconnected Youth in Jefferson County by Year",
          yaxis = list(title = "Percent"),
          xaxis = list(title = "Year"))
@@ -215,6 +229,76 @@ plt_line <- plot_ly(df_plt, x = ~AGE) %>%
 plt_line
 ```
 
+## Percent with a high school degree (or GED)
 
+```{r}
+df5_19 <- df %>% 
+  filter(YEAR > 2013 & AGE > 18 & EDUCD != 999) #19-24 for the past 5 years
+
+df5_19 <- df5_19 %>%
+  mutate(hs = case_when(
+    EDUCD > 62 ~ "HS Degree or GED",
+    TRUE ~ "No HS Degree or GED"
+  ),
+   status = case_when(
+    emp == 1 & school == 1 ~ "Employed and in school",
+    emp == 1 & school == 0 ~ "Employed, not in school",
+    emp == 0 & school == 1 ~ "In school, not employed",
+    emp == 0 & school == 0 ~ "Disconnected"
+  ),
+  count = 1) %>%
+    filter(status == "Disconnected")
+
+svy_df5_19 <- svydesign(ids = ~1, weights = ~PERWT, data = df5_19)
+
+emp_school5_19 <- svyby(~count, ~hs, design = svy_df5_19, svytotal) %>%
+  mutate(percent = count / sum(count))
+
+
+
+plt_donut <- plot_ly(data = emp_school5_19, labels = ~hs, values =  ~percent,
+                     marker = list(colors = c('green', 'red'))) %>%
+  add_pie(hole = 0.6) %>%
+  layout(title = "Opportunity Youth in Louisville aged 19-24, 2014-2018", 
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+plt_donut
+```
+
+```{r}
+df5_19 <- df %>% 
+  filter(YEAR > 2013 & AGE > 18 & FERTYR != 0 & FERTYR != 8 & SEX == 2) #19-24 for the past 5 years, fertility question asked only to women
+
+df5_19 <- df5_19 %>%
+  mutate(child = case_when(
+    FERTYR == 2 ~ "Child in last year",
+    TRUE ~ "No Child in last year"
+  ),
+   status = case_when(
+    emp == 1 & school == 1 ~ "Employed and in school",
+    emp == 1 & school == 0 ~ "Employed, not in school",
+    emp == 0 & school == 1 ~ "In school, not employed",
+    emp == 0 & school == 0 ~ "Disconnected"
+  ),
+  count = 1) %>%
+    filter(status == "Disconnected")
+
+svy_df5_19 <- svydesign(ids = ~1, weights = ~PERWT, data = df5_19)
+
+emp_school5_19 <- svyby(~count, ~child, design = svy_df5_19, svytotal) %>%
+  mutate(percent = count / sum(count))
+
+
+
+plt_donut <- plot_ly(data = emp_school5_19, labels = ~child, values =  ~percent,
+                     marker = list(colors = c('blue', 'orange'))) %>%
+  add_pie(hole = 0.6) %>%
+  layout(title = "Opportunity Youth in Louisville aged 19-24, 2014-2018", 
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+plt_donut
+```
 
 
