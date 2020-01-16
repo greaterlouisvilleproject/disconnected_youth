@@ -11,7 +11,7 @@ output:
 
 Opportunity Youth are people ages 16-24 who are neither working nor in school. A series of [feature articles](https://www.courier-journal.com/story/news/education/2019/12/11/louisville-has-large-number-youth-who-out-school-work/4055310002/) by Mandy McLaren in the Courier-Journal has ignited discussion around opportunity youth, sometimes also called disconnected youth. In addition to the feature articles there is also a [report](https://www.kentuckianaworks.org/news/disconnected-youth) by Kentuckiana Works digging into even more of the data around opportunity youth.
 
-Here, we take a slighlty closer look at opportunity youth in Louisville/Jefferson County (most reporting has focused on the Metro Level, which includes neighboring counties). One reason for this shift is because most of the solutions discussed focus on either city government or JCPS. A separate analysis of surrounding counties would be a useful follow up, but the core county and it's surrounding counties are very different in terms of both underlying problems and solutions. 
+Here, we take a slighlty closer look at opportunity youth in Louisville/Jefferson County (most reporting has focused on the Metro Level, which includes neighboring counties). One reason for this shift is because most of the solutions discussed focus on either city government or JCPS. A separate analysis of surrounding counties would be a useful follow up, but the core county and it's surrounding counties are very different in terms of both underlying problems and solutions. The data for this analysis is Census Microdata, downloaded from IPUMs. 
 
 ```{r, message = FALSE, warning = FALSE}
 #initial setup of data
@@ -229,7 +229,9 @@ plt_line <- plot_ly(df_plt, x = ~AGE) %>%
 plt_line
 ```
 
-## Percent with a high school degree (or GED)
+# High School Graduates?
+
+Outcomes are clearly better for high school graduates. While focusing on improving graduation makes sense, it is also not sufficient. Although high school graduates are less likely to become disconnected, they still make up the majority (3/4s) of the disconnected population. (Because there are more high school graduates in the overall youth population).
 
 ```{r}
 df5_19 <- df %>% 
@@ -266,6 +268,10 @@ plt_donut <- plot_ly(data = emp_school5_19, labels = ~hs, values =  ~percent,
 plt_donut
 ```
 
+# Caregiving?
+
+One reason for not being in the labor market or pursuing education is in order to take care of children, elderly parents, or siblings. Unfortunately, data is only available on women having children in the past year. About 10% of women who are opportunity youth had a child in the past year (as asked in an annual survey). This suggests a substantial number have young children because we are talking about having a kid in a particular year during a 6 year span of life. If 10% have a baby at 19, and a different 10% at 20 it could be as high as 60%. In reality there are probably some second children included, which would put the estimate below 60%, but likely above a third of the population. There is no good way to tell who is responsible for care of children or elderly parents, but that would also increase the percentage of youth who are out of the labor market due to full-time caretaking responsibilities. 
+
 ```{r}
 df5_19 <- df %>% 
   filter(YEAR > 2013 & AGE > 18 & FERTYR != 0 & FERTYR != 8 & SEX == 2) #19-24 for the past 5 years, fertility question asked only to women
@@ -301,4 +307,6 @@ plt_donut <- plot_ly(data = emp_school5_19, labels = ~child, values =  ~percent,
 plt_donut
 ```
 
+# Conclusion
 
+There are many factors driving opportunity youth (e.g. childcare barriers, education barriers, transportation barriers, etc.), which suggests that there will be multiple actions needed to address opportunity youth. Disconnected youth are often looked at as a 16-24 age block, but we found that they difficulties faced by each age are quite different. We also found that for high school graduates by the time they turn 24 they are participating in the labor market at the same right as the aworking age adult population. The transition period may not be smooth however, and so additional work may be needed there. Non high school graduates do not experience the same transition by the time they reach 24 and so are much more likely to be disconnected. 
