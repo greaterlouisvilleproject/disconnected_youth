@@ -11,7 +11,7 @@ output:
 
 Opportunity Youth are people ages 16-24 who are neither working nor in school. A series of [feature articles](https://www.courier-journal.com/story/news/education/2019/12/11/louisville-has-large-number-youth-who-out-school-work/4055310002/) by Mandy McLaren in the Courier-Journal has ignited discussion around opportunity youth, sometimes also called disconnected youth. In addition to the feature articles there is also a [report](https://www.kentuckianaworks.org/news/disconnected-youth) by Kentuckiana Works digging into even more of the data around opportunity youth.
 
-Here, we take a slighlty closer look at opportunity youth in Louisville/Jefferson County (most reporting has focused on the Metro Level, which includes neighboring counties). One reason for this shift is because most of the solutions discussed focus on either city government or JCPS. A separate analysis of surrounding counties would be a useful follow up, but the core county and it's surrounding counties are very different in terms of both underlying problems and solutions. The data for this analysis is Census Microdata, downloaded from IPUMs. 
+Here, we take a slightly closer look at opportunity youth in Louisville/Jefferson County (most reporting has focused on the Metro Level, which includes neighboring counties). One reason for this shift is because most of the solutions discussed focus on either city government or JCPS. A separate analysis of surrounding counties would be a useful follow up, but the core county and it's surrounding counties are very different in terms of both underlying problems and solutions. The data for this analysis is Census Microdata, downloaded from IPUMs. 
 
 ```{r, message = FALSE, warning = FALSE}
 #initial setup of data
@@ -34,11 +34,12 @@ df <- read_csv("ipums_discon.csv") %>%
 
 # School or Jobs?
 
-Opportunity Youth are those neither in school or work, and the balance between school and work shifts by age. Enrollment is very high among 16 and 17 year olds (who are legally required to be in school, so this may mask students who are technically enrolled but chronically absent). Ages 18 through 20 show a drastic drop in school enrollment, followed by another drop at 22. Employment follows the opposite pattern, rising steadily with only 20% of 16 year olds employed and going up to 80% of 24 year olds. Unfortunately, school enrollment drops off more quickly than employment rising, leading to disconnection peaking at age 20.
+Opportunity Youth are those neither in school or work, and the balance between school and work shifts by age. Enrollment is very high among 16 and 17 year olds (who are legally required to be in school, so this may mask students who are technically enrolled but chronically absent). Ages 18 through 20 show a drastic drop in school enrollment, followed by another drop at 22. Employment follows the opposite pattern, rising steadily with only 20% of 16 year olds employed and going up to 80% of 24 year olds. Unfortunately, school enrollment drops off more quickly than employment rises, leading to disconnection peaking at age 20.
 
 ```{r, message = FALSE, warning = FALSE}
 svy_df <- svydesign(ids = ~1, weights = ~PERWT, data = df)
 emp_school <- svyby(~emp+school+discon, ~AGE, design = svy_df, svymean)
+#emp_school_count <- svyby(~emp+school+discon, ~AGE, design = svy_df, svytotal)
 
 df_plt <- emp_school %>%
   mutate(emp = round(emp * 100, 1),
@@ -47,13 +48,15 @@ df_plt <- emp_school %>%
 
 plt_line <- plot_ly(df_plt, x = ~AGE) %>%
   add_trace(y = ~emp, name = 'Employed', type = 'scatter', mode = 'lines', 
-            line = list(color = 'blue')) %>%
+            line = list(color = 'blue')) %>% #,
+            #text = emp_school_count$school,
+            #hoverinfo = 'text') %>%
   add_trace(y = ~school, name = 'In School', type = 'scatter',  mode = 'lines',
             line = list(color = 'green')) %>%
   add_trace(y = ~discon, name = 'Disconnected', type = 'scatter', mode = 'lines', 
             line = list(color = 'red')) %>%
   layout(title = "Disconnected Youth in Jefferson County by Age, 2014-2018",
-         yaxis = list(title = "Percent"),
+         yaxis = list(title = "Percent", range = c(0, 100)),
          xaxis = list(title = "Age"))
 
 plt_line
@@ -66,7 +69,7 @@ Two things to learn from this graph
 
 # 19-24 year olds
 
-Because 16-18 year olds tend to be in school and have much lower rates of disconnection, this more detailed look focuses on ages 19-24. The chart above just considered school and employment without considering overlap. Over a quarter of 19-24 year olds in Louisville are actually both in school and working.
+Because 16-18 year olds tend to be in school and have much lower rates of disconnection, this more detailed look focuses on ages 19-24. The chart above just considered school and employment without considering that some individuals may be both in school and employed. Over a quarter of 19-24 year olds in Louisville are actually both in school and working.
 
 ```{r, message = FALSE, warning = FALSE}
 df5_19 <- df %>% 
@@ -100,7 +103,7 @@ plt_donut
 
 # Temporary Unemployment
 
-We can also look among those who are disconnected to see if they are out of the labor force and if they worked any weeks in the past year. This serves as a rough proxy for what we might consider short-term disconnected (in labor force and worked not long ago) and long-term disconnected who may be harder to reach. Just under half of disconnected youth did not work 
+We can also look among those who are disconnected to see if they are out of the labor force and if they worked any weeks in the past year. This serves as a rough proxy for what we might consider short-term disconnected (in labor force and having worked not long ago) and long-term disconnected who may be harder to reach. Just under half of disconnected youth did not work 
 
 ```{r, message = FALSE, warning = FALSE}
 #a deeper dive on disconnected youth
@@ -134,7 +137,7 @@ plt_donut
 
 # Opportunity Youth over time
 
-Looking over time also shows impact of the recession, with employment falling and school enrollment rates rising when the economy is poor. However, for the most part, the percentage of disconnected youth has fallen since the 2012. (The large swings from year to year are due to small sample size)
+Looking over time also shows the impact of the recession, with employment falling and school enrollment rates rising when the economy is poor. However, for the most part, the percentage of disconnected youth has fallen since the 2012. (The large swings from year to year are due to small sample size)
 
 ```{r, message = FALSE, warning = FALSE}
 #Analysis by Year for 19-24
@@ -159,7 +162,7 @@ plt_line <- plot_ly(df_plt, x = ~YEAR) %>%
   add_trace(y = ~discon, name = 'Disconnected', mode = 'lines',
             line = list(color = 'red')) %>%
   layout(title = "Disconnected Youth in Jefferson County by Year",
-         yaxis = list(title = "Percent"),
+         yaxis = list(title = "Percent", range = c(0, 100)),
          xaxis = list(title = "Year"))
 
 plt_line
@@ -167,7 +170,7 @@ plt_line
 
 # High Shool Degrees
 
-Having a high school degree makes a large difference. For those 19-24 who do have a high school degree (or GED) the percent employed rises to around 80 percent. Important context here is that 80% is the percent of people 25-54 who are [working](https://fred.stlouisfed.org/series/LNS12300060). Whether or not 80% of the prime working age labor force being employed is a good number is a more detailed question for economists and sociologists, but for our purposes here we can say they've effectively transitioned into the adult population. 
+Having a high school degree makes a large difference. For those 19-24 who do have a high school degree (or GED) the percent employed rises to around 80 percent. It is important to note that 80% is the percent of people 25-54 who are [working](https://fred.stlouisfed.org/series/LNS12300060). Whether or not 80% of the prime working age labor force being employed is a good number is a more detailed question for economists and sociologists, but for our purposes here, we can say they've effectively transitioned into the adult population. 
 
 ```{r, message = FALSE, warning = FALSE}
 #Analysis by AGE for 19-24 who get HS degree
@@ -192,7 +195,7 @@ plt_line <- plot_ly(df_plt, x = ~AGE) %>%
   add_trace(y = ~discon, name = 'Disconnected', mode = 'lines',
             line = list(color = 'red')) %>%
   layout(title = "Disconnected Youth in Jefferson County by Year",
-         yaxis = list(title = "Percent"),
+         yaxis = list(title = "Percent", range = c(0, 100)),
          xaxis = list(title = "Year"))
 
 plt_line
@@ -223,7 +226,7 @@ plt_line <- plot_ly(df_plt, x = ~AGE) %>%
   add_trace(y = ~discon, name = 'Disconnected', mode = 'lines',
             line = list(color = 'red')) %>%
   layout(title = "Disconnected Youth in Jefferson County by Year",
-         yaxis = list(title = "Percent"),
+         yaxis = list(title = "Percent", range = c(0, 100)),
          xaxis = list(title = "Year"))
 
 plt_line
@@ -231,7 +234,7 @@ plt_line
 
 # High School Graduates?
 
-Outcomes are clearly better for high school graduates. While focusing on improving graduation makes sense, it is also not sufficient. Although high school graduates are less likely to become disconnected, they still make up the majority (3/4s) of the disconnected population. (Because there are more high school graduates in the overall youth population).
+Outcomes are clearly better for high school graduates. While focusing on improving graduation makes sense, it is also not sufficient. Although high school graduates are less likely to become disconnected, they still make up the majority (3/4s) of the disconnected population. (This is because there are more high school graduates in the overall youth population).
 
 ```{r}
 df5_19 <- df %>% 
@@ -270,7 +273,7 @@ plt_donut
 
 # Caregiving?
 
-One reason for not being in the labor market or pursuing education is in order to take care of children, elderly parents, or siblings. Unfortunately, data is only available on women having children in the past year. About 10% of women who are opportunity youth had a child in the past year (as asked in an annual survey). This suggests a substantial number have young children because we are talking about having a kid in a particular year during a 6 year span of life. If 10% have a baby at 19, and a different 10% at 20 it could be as high as 60%. In reality there are probably some second children included, which would put the estimate below 60%, but likely above a third of the population. There is no good way to tell who is responsible for care of children or elderly parents, but that would also increase the percentage of youth who are out of the labor market due to full-time caretaking responsibilities. 
+One reason for not being in the labor market or pursuing education is the need to act as caregiver to children, elderly parents, or siblings. Unfortunately, data is only available on women having children in the past year. About 10% of women who are opportunity youth had a child in the past year (as asked in an annual survey). This suggests a substantial number have young children because we are talking about having a child in a particular year during a 6 year span of life. If 10% have a baby at 19, and a different 10% at 20 it could be as high as 60%. In reality, there are probably some second children included, which would put the estimate below 60%, but likely above a third of the population. There is no good way to tell who is responsible for care of siblings or elderly parents, but that would also increase the percentage of youth who are out of the labor market due to full-time caretaking responsibilities. 
 
 ```{r}
 df5_19 <- df %>% 
@@ -309,4 +312,4 @@ plt_donut
 
 # Conclusion
 
-There are many factors driving opportunity youth (e.g. childcare barriers, education barriers, transportation barriers, etc.), which suggests that there will be multiple actions needed to address opportunity youth. Disconnected youth are often looked at as a 16-24 age block, but we found that they difficulties faced by each age are quite different. We also found that for high school graduates by the time they turn 24 they are participating in the labor market at the same right as the aworking age adult population. The transition period may not be smooth however, and so additional work may be needed there. Non high school graduates do not experience the same transition by the time they reach 24 and so are much more likely to be disconnected. 
+There are many factors contributing to opportunity youth (e.g. childcare barriers, education barriers, transportation barriers, etc.), which suggests that there will be multiple actions needed to address opportunity youth. Disconnected youth are often looked at as a 16-24 age block, but we found that they difficulties faced by each age are quite different. We also found that for high school graduates, by the time they turn 24, they are participating in the labor market at the same rate as the working age adult population. However, the transition period may not be smooth, so additional work may be needed there. Non high school graduates do not experience the same transition by the time they reach 24 and so are much more likely to be disconnected. 
