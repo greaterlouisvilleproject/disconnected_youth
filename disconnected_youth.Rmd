@@ -24,12 +24,14 @@ library(plotly)
 df <- read_csv("ipums_discon.csv") %>%
   filter(PUMA %in% c(01701, 01702, 01703, 01704, 01705, 01706) & 
            STATEFIP == 21 &
+           COUNTYFIP == 111 &
            EMPSTAT != 0 &
            SCHOOL != 0)  %>%
   #recode employment, school, and create disconnected youth. Having dichotomous variables makes it easy to get percentages later
   mutate(emp = if_else(EMPSTAT == 1, 1, 0),
          school = if_else(SCHOOL == 2, 1, 0),
-         discon = if_else((emp == 0 & school == 0), 1, 0))
+         discon = if_else((emp == 0 & school == 0), 1, 0),
+         discon = if_else((EMPSTAT == 0|SCHOOL ==0), NA_real_, discon)) #NA if either school or emp is NA
 ```
 
 # School or Jobs?
